@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Voigen — AI Voice Agents for Businesses</title>
+  <meta name="description" content="Voigen: AI voice agents for customer support, bookings and sales. Get early access." />
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <style>
+    :root{--accent:#6C63FF;--muted:#6b7280;--bg:#f7f7fb;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+    body{margin:0;background:var(--bg);color:#0f172a;line-height:1.45}
+    .container{max-width:980px;margin:48px auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between}
+    .logo{font-weight:700;color:var(--accent);letter-spacing:0.6px}
+    .hero{display:grid;grid-template-columns:1fr 360px;gap:28px;align-items:center;margin-top:28px}
+    h1{font-size:32px;margin:0 0 12px}
+    p.lead{color:var(--muted);margin:0 0 18px}
+    .cta{display:flex;gap:12px}
+    .btn{background:var(--accent);color:white;padding:12px 16px;border-radius:10px;text-decoration:none;font-weight:600}
+    .btn.ghost{background:transparent;color:var(--accent);border:2px solid var(--accent)}
+    .card{background:white;border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
+    .features{display:flex;gap:12px;margin-top:22px}
+    .feature{flex:1;background:transparent;padding:12px;border-radius:10px}
+    footer{margin-top:40px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;align-items:center}
+    form input, form textarea{width:100%;padding:10px;margin-top:8px;border-radius:8px;border:1px solid #e6e8ee}
+    form button{margin-top:10px}
+    @media(max-width:880px){.hero{grid-template-columns:1fr;}.card{margin-top:18px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">Voigen</div>
+      <nav style="color:var(--muted);font-weight:600">
+        <a href="#features" style="margin-right:16px;color:inherit;text-decoration:none">Features</a>
+        <a href="#pricing" style="margin-right:16px;color:inherit;text-decoration:none">Pricing</a>
+        <a href="#contact" style="color:inherit;text-decoration:none">Contact</a>
+      </nav>
+    </header>
+
+    <section class="hero" aria-labelledby="hero-heading">
+      <div>
+        <h1 id="hero-heading">AI voice agents that call, understand, and convert customers.</h1>
+        <p class="lead">Voigen builds customizable AI voice agents for customer support, appointment booking, follow-ups and sales calls — without hiring a call center.</p>
+        <div class="cta">
+          <a class="btn" href="#contact">Get Early Access</a>
+          <a class="btn ghost" href="#demo">See Demo</a>
+        </div>
+
+        <div class="features" id="features">
+          <div class="feature card">
+            <strong>Auto Calls</strong>
+            <div style="color:var(--muted);font-size:14px;margin-top:8px">Schedule automated outbound calls for reminders and lead qualification.</div>
+          </div>
+          <div class="feature card">
+            <strong>Human-like Speech</strong>
+            <div style="color:var(--muted);font-size:14px;margin-top:8px">Natural voices and contextual responses — fewer failed calls.</div>
+          </div>
+          <div class="feature card">
+            <strong>Easy Integration</strong>
+            <div style="color:var(--muted);font-size:14px;margin-top:8px">Connect with your CRM or use our simple webhook/API.</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="card" id="demo">
+        <strong>Request a demo</strong>
+        <p style="color:var(--muted);font-size:14px;margin-top:6px">We’ll call you with a short demo and walkthrough. No code required.</p>
+
+        <!-- Using Formspree for simple form backend (replace action with your Formspree URL) -->
+        <form id="demo-form" action="https://formspree.io/f/your-id" method="POST">
+          <label>
+            Name
+            <input type="text" name="name" placeholder="Your name" required>
+          </label>
+          <label>
+            Company
+            <input type="text" name="company" placeholder="Company name">
+          </label>
+          <label>
+            Phone
+            <input type="tel" name="phone" placeholder="+91 98765 43210" required>
+          </label>
+          <label>
+            Message
+            <textarea name="message" rows="3" placeholder="Use case (support, bookings, sales)"></textarea>
+          </label>
+          <button class="btn" type="submit">Request Demo</button>
+        </form>
+
+        <p style="font-size:13px;color:var(--muted);margin-top:10px">Or email <a href="mailto:hello@voigen.ai">hello@voigen.ai</a></p>
+      </aside>
+    </section>
+
+    <section id="pricing" style="margin-top:28px">
+      <h2 style="margin:0 0 8px">Pricing (simple)</h2>
+      <p style="color:var(--muted);margin:0 0 12px;font-size:14px">Starting with pilot plans. Custom enterprise pricing available.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="card" style="flex:1;min-width:220px">
+          <strong>Pilot</strong>
+          <div style="color:var(--muted);margin-top:8px">Ideal for small teams — limited calls, quick setup.</div>
+        </div>
+        <div class="card" style="flex:1;min-width:220px">
+          <strong>Growth</strong>
+          <div style="color:var(--muted);margin-top:8px">Monthly volume, priority support, integrations.</div>
+        </div>
+        <div class="card" style="flex:1;min-width:220px">
+          <strong>Enterprise</strong>
+          <div style="color:var(--muted);margin-top:8px">SLA, security review, custom voice models.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div>© <strong>Voigen</strong> — AI Voice Agents</div>
+      <div style="text-align:right">
+        <a href="https://wa.me/919876543210" style="text-decoration:none;color:var(--muted);font-weight:600">WhatsApp</a> ·
+        <a href="mailto:hello@voigen.ai" style="text-decoration:none;color:var(--muted);font-weight:600">Email</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
