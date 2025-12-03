@@ -1,0 +1,15 @@
+# robots.txt for Voigen.ai
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin or private directories (if any in future)
+# Disallow: /admin/
+# Disallow: /private/
+
+# Sitemap location
+Sitemap: https://voigen.ai/sitemap.xml
+
+# Crawl-delay (optional, uncomment if needed)
+# Crawl-delay: 10
