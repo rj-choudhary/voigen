@@ -10,8 +10,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://tally.so/widgets/embed.js"></script>
-  <!-- LiveKit Client SDK -->
-  <script src="https://unpkg.com/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
+  <!-- LiveKit Client SDK - Local file -->
+  <script src="assets/livekit-client.js"></script>
+  <script>
+    // Verify LiveKit loaded
+    if (typeof LivekitClient !== 'undefined') {
+      console.log('✅ LiveKit loaded from local file');
+    } else {
+      console.error('❌ LiveKit failed to load from local file');
+    }
+  </script>
 </head>
 <body>
   <!-- Navigation -->

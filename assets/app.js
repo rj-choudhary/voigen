@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // LiveKit configuration - Replace with your actual values
   const LIVEKIT_CONFIG = {
     url: 'wss://voigen-ai-jbqmetnc.livekit.cloud', // Replace with your LiveKit server URL
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjUwNDIyNTYsImlkZW50aXR5Ijoid2VidXNlciIsImlzcyI6IkFQSXk2eXZNTFZNOFpVciIsIm5iZiI6MTc2NTA0MTM1Niwic3ViIjoid2VidXNlciIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJ2b2lnZW5fYWlfbGl2ZSIsInJvb21Kb2luIjp0cnVlfX0.bH4dTMAJNGVes6A9q0cp4nYSTIFG3LAq6Ao4dOnwg9g', // This should be generated server-side for production
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjUxNDE0NDgsImlkZW50aXR5Ijoid2VidXNlciIsImlzcyI6IkFQSXk2eXZNTFZNOFpVciIsIm5iZiI6MTc2NTA1MTQ0OCwic3ViIjoid2VidXNlciIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJ2b2lnZW5fYWlfbGl2ZSIsInJvb21Kb2luIjp0cnVlfX0.8hfpewrIQ3MWRxcP5-lcFBNEkqALoCOTnlZpVZgjmfM', // This should be generated server-side for production
     agentId: 'CA_KQEvtTQTKtyR' // Replace with your LiveKit agent ID
   };
   
@@ -183,47 +183,105 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         this.updateUI('connecting', 'Connecting to AI Assistant...', 'Please wait while we establish the connection.');
         
-        // Create room instance
-        this.room = new LiveKitClient.Room({
+        // Step 1: Wait for LiveKit to be available (with timeout)
+        console.log('Step 1: Waiting for LiveKit availability...');
+        await this.waitForLiveKit();
+        console.log('✅ LiveKit Client SDK loaded successfully');
+        
+        // Step 2: Check if getUserMedia is supported
+        console.log('Step 2: Checking browser media support...');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Your browser does not support microphone access. Please use a modern browser.');
+        }
+        console.log('✅ Browser supports media devices');
+        
+        // Step 3: Request microphone permission FIRST
+        console.log('Step 3: Requesting microphone permission...');
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log('✅ Microphone permission granted');
+        } catch (micError) {
+          console.error('❌ Microphone permission denied:', micError);
+          if (micError.name === 'NotAllowedError') {
+            throw new Error('Microphone permission denied. Please allow microphone access and try again.');
+          } else if (micError.name === 'NotFoundError') {
+            throw new Error('No microphone found. Please connect a microphone and try again.');
+          } else {
+            throw new Error(`Microphone error: ${micError.message}`);
+          }
+        }
+        
+        // Step 4: Create room instance
+        console.log('Step 4: Creating LiveKit room...');
+        this.room = new LivekitClient.Room({
           adaptiveStream: true,
           dynacast: true,
         });
+        console.log('✅ Room created');
         
-        // Set up event listeners
+        // Step 5: Set up event listeners
+        console.log('Step 5: Setting up event listeners...');
         this.setupEventListeners();
+        console.log('✅ Event listeners set up');
         
-        // Request microphone permission
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        this.localAudioTrack = await LiveKitClient.createLocalAudioTrack({
-          source: LiveKitClient.Track.Source.Microphone,
+        // Step 6: Create local audio track
+        console.log('Step 6: Creating local audio track...');
+        this.localAudioTrack = await LivekitClient.createLocalAudioTrack({
+          source: LivekitClient.Track.Source.Microphone,
         });
+        console.log('✅ Local audio track created');
         
-        // For LiveKit agents, we need to connect to the specific room defined in the token
-        // The agent will join automatically based on your LiveKit agent configuration
+        // Step 7: Connect to LiveKit room
+        console.log('Step 7: Connecting to LiveKit server...');
+        console.log('Server URL:', LIVEKIT_CONFIG.url);
+        console.log('Token (first 50 chars):', LIVEKIT_CONFIG.token.substring(0, 50) + '...');
+        
         await this.room.connect(LIVEKIT_CONFIG.url, LIVEKIT_CONFIG.token, {
           autoSubscribe: true,
         });
+        console.log('✅ Connected to LiveKit server');
         
-        // Publish local audio track
+        // Step 8: Publish local audio track
+        console.log('Step 8: Publishing audio track...');
         await this.room.localParticipant.publishTrack(this.localAudioTrack);
+        console.log('✅ Audio track published');
         
+        // Step 9: Success!
         this.isConnected = true;
         this.updateUI('connected', 'Connected to AI Assistant', 'You can now speak with our AI assistant. The conversation is live!');
         this.startAudioVisualizer();
         
-        // Log connection info for debugging
-        console.log('Connected to LiveKit room successfully');
+        console.log('🎉 Voice agent connection successful!');
         console.log('Agent ID:', LIVEKIT_CONFIG.agentId);
+        console.log('Room participants:', this.room.participants ? this.room.participants.size : 0);
+        
+        // Clean up the test stream
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
         
       } catch (error) {
-        console.error('Failed to connect to voice agent:', error);
-        this.updateUI('error', 'Connection Failed', 'Unable to connect to the AI assistant. Please check your microphone permissions and try again.');
+        console.error('❌ Voice agent connection failed at step:', error.message);
+        console.error('Full error:', error);
+        
+        // Show specific error message
+        let errorMessage = 'Connection failed. ';
+        if (error.message.includes('microphone')) {
+          errorMessage += error.message;
+        } else if (error.message.includes('LiveKit')) {
+          errorMessage += 'Please check your internet connection and try again.';
+        } else {
+          errorMessage += error.message || 'Please try again.';
+        }
+        
+        this.updateUI('error', 'Connection Failed', errorMessage);
       }
     }
     
     setupEventListeners() {
-      this.room.on(LiveKitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
-        if (track.kind === LiveKitClient.Track.Kind.Audio) {
+      this.room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track.kind === LivekitClient.Track.Kind.Audio) {
           this.remoteAudioTrack = track;
           const audioElement = track.attach();
           document.body.appendChild(audioElement);
@@ -234,18 +292,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
       
-      this.room.on(LiveKitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
-        if (track.kind === LiveKitClient.Track.Kind.Audio) {
+      this.room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        if (track.kind === LivekitClient.Track.Kind.Audio) {
           track.detach();
           this.hideSpeakingAnimation();
         }
       });
       
-      this.room.on(LiveKitClient.RoomEvent.Disconnected, () => {
+      this.room.on(LivekitClient.RoomEvent.Disconnected, () => {
         this.cleanup();
       });
       
-      this.room.on(LiveKitClient.RoomEvent.ConnectionQualityChanged, (quality, participant) => {
+      this.room.on(LivekitClient.RoomEvent.ConnectionQualityChanged, (quality, participant) => {
         console.log('Connection quality:', quality);
       });
     }
@@ -350,6 +408,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     hideSpeakingAnimation() {
       voiceAvatar.classList.remove('speaking');
+    }
+    
+    // Wait for LiveKit to be available with timeout
+    async waitForLiveKit(timeout = 10000) {
+      const startTime = Date.now();
+      
+      while (typeof LivekitClient === 'undefined') {
+        if (Date.now() - startTime > timeout) {
+          throw new Error('LiveKit Client SDK failed to load within timeout period. Please check your internet connection.');
+        }
+        
+        // Wait 100ms before checking again
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Additional check to ensure LiveKit is fully initialized
+      if (!LivekitClient.Room || !LivekitClient.createLocalAudioTrack) {
+        throw new Error('LiveKit Client SDK loaded but is not fully initialized. Please refresh the page and try again.');
+      }
     }
   }
   
