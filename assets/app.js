@@ -198,10 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
           source: LiveKitClient.Track.Source.Microphone,
         });
         
-        // Generate a unique room name for this session (agents typically join specific rooms)
-        const roomName = `agent-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Connect to room - the agent will join automatically based on your LiveKit agent configuration
+        // For LiveKit agents, we need to connect to the specific room defined in the token
+        // The agent will join automatically based on your LiveKit agent configuration
         await this.room.connect(LIVEKIT_CONFIG.url, LIVEKIT_CONFIG.token, {
           autoSubscribe: true,
         });
@@ -214,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
         this.startAudioVisualizer();
         
         // Log connection info for debugging
-        console.log('Connected to LiveKit room:', roomName);
+        console.log('Connected to LiveKit room successfully');
         console.log('Agent ID:', LIVEKIT_CONFIG.agentId);
         
       } catch (error) {
