@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://tally.so/widgets/embed.js"></script>
+  <!-- LiveKit Client SDK -->
+  <script src="https://unpkg.com/livekit-client@2.5.7/dist/livekit-client.umd.js"></script>
 </head>
 <body>
   <!-- Navigation -->
@@ -53,6 +55,11 @@
         <div class="hero-cta">
           <a href="#contact" class="btn btn-primary">Get Started Free</a>
           <a href="#features" class="btn btn-secondary">Explore Features</a>
+          <button id="talk-now-btn" class="btn btn-voice">
+            <span class="btn-icon">🎤</span>
+            <span class="btn-text">Talk Now</span>
+            <span class="btn-status"></span>
+          </button>
         </div>
         <div class="hero-stats">
           <div class="stat">
@@ -346,6 +353,42 @@
       </div>
     </div>
   </footer>
+
+  <!-- Voice Chat Modal -->
+  <div id="voice-modal" class="voice-modal">
+    <div class="voice-modal-content">
+      <button class="voice-modal-close" id="voice-modal-close">&times;</button>
+      
+      <div class="voice-avatar" id="voice-avatar">
+        🤖
+      </div>
+      
+      <div class="voice-status" id="voice-status">Connecting...</div>
+      <div class="voice-message" id="voice-message">Please wait while we connect you to our AI assistant.</div>
+      
+      <div class="audio-visualizer" id="audio-visualizer">
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+        <div class="audio-bar"></div>
+      </div>
+      
+      <div class="voice-controls" id="voice-controls">
+        <button class="voice-control-btn mute" id="mute-btn">
+          <span>🔇</span>
+          Mute
+        </button>
+        <button class="voice-control-btn end-call" id="end-call-btn">
+          <span>📞</span>
+          End Call
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="assets/app.js"></script>
 </body>

@@ -145,9 +145,274 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
+  // ===== Voice Agent Integration =====
+  const talkNowBtn = document.getElementById('talk-now-btn');
+  const voiceModal = document.getElementById('voice-modal');
+  const voiceModalClose = document.getElementById('voice-modal-close');
+  const voiceAvatar = document.getElementById('voice-avatar');
+  const voiceStatus = document.getElementById('voice-status');
+  const voiceMessage = document.getElementById('voice-message');
+  const audioVisualizer = document.getElementById('audio-visualizer');
+  const muteBtn = document.getElementById('mute-btn');
+  const endCallBtn = document.getElementById('end-call-btn');
+  
+  // LiveKit configuration - Replace with your actual values
+  const LIVEKIT_CONFIG = {
+    url: 'wss://voigen-ai-jbqmetnc.livekit.cloud', // Replace with your LiveKit server URL
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjUwNDIyNTYsImlkZW50aXR5Ijoid2VidXNlciIsImlzcyI6IkFQSXk2eXZNTFZNOFpVciIsIm5iZiI6MTc2NTA0MTM1Niwic3ViIjoid2VidXNlciIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJ2b2lnZW5fYWlfbGl2ZSIsInJvb21Kb2luIjp0cnVlfX0.bH4dTMAJNGVes6A9q0cp4nYSTIFG3LAq6Ao4dOnwg9g', // This should be generated server-side for production
+    agentId: 'CA_KQEvtTQTKtyR' // Replace with your LiveKit agent ID
+  };
+  
+  let room = null;
+  let isConnected = false;
+  let isMuted = false;
+  let localAudioTrack = null;
+  let remoteAudioTrack = null;
+  
+  // Voice Agent Manager
+  class VoiceAgentManager {
+    constructor() {
+      this.room = null;
+      this.isConnected = false;
+      this.isMuted = false;
+      this.localAudioTrack = null;
+      this.remoteAudioTrack = null;
+    }
+    
+    async connect() {
+      try {
+        this.updateUI('connecting', 'Connecting to AI Assistant...', 'Please wait while we establish the connection.');
+        
+        // Create room instance
+        this.room = new LiveKitClient.Room({
+          adaptiveStream: true,
+          dynacast: true,
+        });
+        
+        // Set up event listeners
+        this.setupEventListeners();
+        
+        // Request microphone permission
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.localAudioTrack = await LiveKitClient.createLocalAudioTrack({
+          source: LiveKitClient.Track.Source.Microphone,
+        });
+        
+        // Generate a unique room name for this session (agents typically join specific rooms)
+        const roomName = `agent-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Connect to room - the agent will join automatically based on your LiveKit agent configuration
+        await this.room.connect(LIVEKIT_CONFIG.url, LIVEKIT_CONFIG.token, {
+          autoSubscribe: true,
+        });
+        
+        // Publish local audio track
+        await this.room.localParticipant.publishTrack(this.localAudioTrack);
+        
+        this.isConnected = true;
+        this.updateUI('connected', 'Connected to AI Assistant', 'You can now speak with our AI assistant. The conversation is live!');
+        this.startAudioVisualizer();
+        
+        // Log connection info for debugging
+        console.log('Connected to LiveKit room:', roomName);
+        console.log('Agent ID:', LIVEKIT_CONFIG.agentId);
+        
+      } catch (error) {
+        console.error('Failed to connect to voice agent:', error);
+        this.updateUI('error', 'Connection Failed', 'Unable to connect to the AI assistant. Please check your microphone permissions and try again.');
+      }
+    }
+    
+    setupEventListeners() {
+      this.room.on(LiveKitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+        if (track.kind === LiveKitClient.Track.Kind.Audio) {
+          this.remoteAudioTrack = track;
+          const audioElement = track.attach();
+          document.body.appendChild(audioElement);
+          audioElement.play();
+          
+          // Show speaking animation when receiving audio
+          this.showSpeakingAnimation();
+        }
+      });
+      
+      this.room.on(LiveKitClient.RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+        if (track.kind === LiveKitClient.Track.Kind.Audio) {
+          track.detach();
+          this.hideSpeakingAnimation();
+        }
+      });
+      
+      this.room.on(LiveKitClient.RoomEvent.Disconnected, () => {
+        this.cleanup();
+      });
+      
+      this.room.on(LiveKitClient.RoomEvent.ConnectionQualityChanged, (quality, participant) => {
+        console.log('Connection quality:', quality);
+      });
+    }
+    
+    async toggleMute() {
+      if (!this.localAudioTrack) return;
+      
+      this.isMuted = !this.isMuted;
+      await this.localAudioTrack.setMuted(this.isMuted);
+      
+      muteBtn.classList.toggle('active', this.isMuted);
+      muteBtn.innerHTML = this.isMuted ? '<span>🔊</span>Unmute' : '<span>🔇</span>Mute';
+    }
+    
+    async disconnect() {
+      if (this.room) {
+        await this.room.disconnect();
+      }
+      this.cleanup();
+    }
+    
+    cleanup() {
+      this.isConnected = false;
+      this.isMuted = false;
+      
+      if (this.localAudioTrack) {
+        this.localAudioTrack.stop();
+        this.localAudioTrack = null;
+      }
+      
+      if (this.remoteAudioTrack) {
+        this.remoteAudioTrack.detach();
+        this.remoteAudioTrack = null;
+      }
+      
+      this.room = null;
+      this.stopAudioVisualizer();
+      this.closeModal();
+    }
+    
+    updateUI(state, status, message) {
+      // Update button state
+      talkNowBtn.className = `btn btn-voice ${state}`;
+      
+      const btnText = talkNowBtn.querySelector('.btn-text');
+      switch(state) {
+        case 'connecting':
+          btnText.textContent = 'Connecting...';
+          break;
+        case 'connected':
+          btnText.textContent = 'End Call';
+          break;
+        case 'error':
+          btnText.textContent = 'Try Again';
+          break;
+        default:
+          btnText.textContent = 'Talk Now';
+      }
+      
+      // Update modal content
+      voiceStatus.textContent = status;
+      voiceMessage.textContent = message;
+      
+      // Show/hide controls based on state
+      const controls = document.getElementById('voice-controls');
+      if (state === 'connected') {
+        controls.style.display = 'flex';
+      } else {
+        controls.style.display = 'none';
+      }
+    }
+    
+    showModal() {
+      voiceModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    closeModal() {
+      voiceModal.classList.remove('active');
+      document.body.style.overflow = '';
+      
+      // Reset UI
+      this.updateUI('idle', 'Ready to Connect', 'Click "Talk Now" to start a conversation with our AI assistant.');
+      muteBtn.classList.remove('active');
+      muteBtn.innerHTML = '<span>🔇</span>Mute';
+    }
+    
+    startAudioVisualizer() {
+      audioVisualizer.classList.add('active');
+    }
+    
+    stopAudioVisualizer() {
+      audioVisualizer.classList.remove('active');
+    }
+    
+    showSpeakingAnimation() {
+      voiceAvatar.classList.add('speaking');
+      setTimeout(() => {
+        voiceAvatar.classList.remove('speaking');
+      }, 2000);
+    }
+    
+    hideSpeakingAnimation() {
+      voiceAvatar.classList.remove('speaking');
+    }
+  }
+  
+  // Initialize Voice Agent Manager
+  const voiceAgent = new VoiceAgentManager();
+  
+  // Event Listeners
+  talkNowBtn.addEventListener('click', async () => {
+    if (!voiceAgent.isConnected) {
+      // Show configuration warning if not set up
+      if (LIVEKIT_CONFIG.url === 'YOUR_LIVEKIT_SERVER_URL') {
+        alert('Please configure your LiveKit server URL and access token in the JavaScript file before using the voice agent feature.');
+        return;
+      }
+      
+      voiceAgent.showModal();
+      await voiceAgent.connect();
+    } else {
+      await voiceAgent.disconnect();
+    }
+  });
+  
+  voiceModalClose.addEventListener('click', async () => {
+    if (voiceAgent.isConnected) {
+      await voiceAgent.disconnect();
+    } else {
+      voiceAgent.closeModal();
+    }
+  });
+  
+  muteBtn.addEventListener('click', () => {
+    voiceAgent.toggleMute();
+  });
+  
+  endCallBtn.addEventListener('click', async () => {
+    await voiceAgent.disconnect();
+  });
+  
+  // Close modal when clicking outside
+  voiceModal.addEventListener('click', async (e) => {
+    if (e.target === voiceModal) {
+      if (voiceAgent.isConnected) {
+        await voiceAgent.disconnect();
+      } else {
+        voiceAgent.closeModal();
+      }
+    }
+  });
+  
+  // Handle browser tab visibility changes
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && voiceAgent.isConnected) {
+      // Optionally pause or handle when tab becomes hidden
+      console.log('Tab hidden - voice call continues in background');
+    }
+  });
+  
   // ===== Console Welcome Message =====
   console.log('%c🚀 Welcome to Voigen.ai!', 'color: #6366f1; font-size: 20px; font-weight: bold;');
   console.log('%cInterested in our AI automation solutions? Contact us at hello@voigen.ai', 'color: #818cf8; font-size: 14px;');
+  console.log('%c🎤 Voice Agent Ready! Configure your LiveKit settings to enable voice chat.', 'color: #10b981; font-size: 14px;');
   
 });
 
