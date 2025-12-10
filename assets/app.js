@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // LiveKit configuration - Replace with your actual values
   const LIVEKIT_CONFIG = {
     url: 'wss://voigen-ai-jbqmetnc.livekit.cloud', // Replace with your LiveKit server URL
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjUxNDE0NDgsImlkZW50aXR5Ijoid2VidXNlciIsImlzcyI6IkFQSXk2eXZNTFZNOFpVciIsIm5iZiI6MTc2NTA1MTQ0OCwic3ViIjoid2VidXNlciIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJ2b2lnZW5fYWlfbGl2ZSIsInJvb21Kb2luIjp0cnVlfX0.8hfpewrIQ3MWRxcP5-lcFBNEkqALoCOTnlZpVZgjmfM', // This should be generated server-side for production
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjYyODgzMzEsImlkZW50aXR5Ijoid2VidXNlciIsImlzcyI6IkFQSXk2eXZNTFZNOFpVciIsIm5iZiI6MTc2NTM4ODMzMSwic3ViIjoid2VidXNlciIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJ2b2lnZW5fYWlfbGl2ZSIsInJvb21Kb2luIjp0cnVlfX0.MikCkO-5CsWGf3VUS5RP2qK7xwgt-ufUVVRvesTTweE', // This should be generated server-side for production
     agentId: 'CA_KQEvtTQTKtyR' // Replace with your LiveKit agent ID
   };
   
