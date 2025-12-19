@@ -398,5 +398,21 @@
   </div>
   <script src="assets/app.js"></script>
   <script src="assets/wave-animation.js"></script>
+  
+  <!-- Google Analytics - Talk Now Button Tracking -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const talkBtn = document.getElementById("talkNowBtn");
+
+      if (talkBtn) {
+        talkBtn.addEventListener("click", function () {
+          gtag('event', 'talk_now_click', {
+            event_category: 'engagement',
+            event_label: 'Talk Now Button'
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>
