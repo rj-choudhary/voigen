@@ -1,26 +1,21 @@
 // ===== Configuration =====
-// Replace this with your CLOUD RUN URL (Note: Use wss:// instead of https://)
-// Example: "wss://voigen-voice-proxy-xyz.a.run.app"
 const BACKEND_URL = "wss://voigen-backend-1008374989342.asia-south1.run.app"; 
 // ==========================
 
-// Global state variables
 let isRecording = false;
-let isSpeaking = false;
 let websocket = null;
 let audioContext = null;
-let mediaRecorder = null;
 let audioQueue = [];
 let isPlaying = false;
 let currentStream = null;
+let currentSource = null; // IMPORTANT: Reference to the active sound being played
 
 // ===== Helper Functions =====
 
 function arrayBufferToBase64(buffer) {
   let binary = '';
   const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
+  for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
   return window.btoa(binary);
@@ -29,7 +24,6 @@ function arrayBufferToBase64(buffer) {
 function floatTo16BitPCM(float32Array) {
   const buffer = new ArrayBuffer(float32Array.length * 2);
   const view = new DataView(buffer);
-  
   for (let i = 0; i < float32Array.length; i++) {
     let s = Math.max(-1, Math.min(1, float32Array[i]));
     s = s < 0 ? s * 0x8000 : s * 0x7FFF;
@@ -38,314 +32,327 @@ function floatTo16BitPCM(float32Array) {
   return buffer;
 }
 
-// ===== UI Logging Helpers =====
-
-function logMessage(text, type) {
-  const log = document.getElementById('talkLog');
-  const p = document.createElement('p');
-  p.classList.add(type === 'user' ? 'user-message' : 'ai-message');
-  p.textContent = text;
-  log.appendChild(p);
-  log.scrollTop = log.scrollHeight;
-}
-
-function updateMicStatus(status, className) {
-  const micStatusText = document.getElementById('micStatusText');
-  const micToggleBtn = document.getElementById('micToggleBtn');
-  micStatusText.textContent = status;
-  micToggleBtn.className = `mic-toggle-btn ${className || ''}`;
+// CRITICAL: This function kills the AI's current sentence immediately
+function stopAiAudio() {
+  console.log("!!! Interrupting AI Audio !!!");
+  audioQueue = []; 
+  if (currentSource) {
+    try {
+      currentSource.stop();
+    } catch (e) {}
+    currentSource = null;
+  }
+  isPlaying = false;
 }
 
 // ===== WebSocket Connection Logic =====
 
 async function connectToBackend() {
-  if (!BACKEND_URL || BACKEND_URL.includes("YOUR-CLOUD-RUN-URL")) {
-    logMessage("ERROR: Backend URL not set in app.js", "ai");
-    return;
-  }
-
-  updateMicStatus("Connecting...", "connecting");
+  updateCallStatus("Connecting...");
+  updateCallStatusInline("Connecting...");
 
   try {
     websocket = new WebSocket(BACKEND_URL);
     
     websocket.onopen = () => {
-      console.log("Connected to Backend Proxy");
-      // Note: We no longer send the 'setup' message here. 
-      // The backend handles the prompt and configuration securely.
-      updateMicStatus("Ready. Click to Talk.", "");
+      console.log("Connected to Backend");
+      updateCallStatus("Connected! Start speaking...");
+      updateCallStatusInline("Connected! Start speaking...");
+      // Auto-start recording when connected
+      startRecording();
     };
 
     websocket.onmessage = async (event) => {
       try {
-        let response;
-        if (event.data instanceof Blob) {
-          const text = await event.data.text();
-          response = JSON.parse(text);
-        } else {
-          response = JSON.parse(event.data);
+        let response = JSON.parse(event.data instanceof Blob ? await event.data.text() : event.data);
+
+        // 1. LISTEN FOR INTERRUPTION SIGNAL FROM GEMINI
+        // Gemini sends this when it detects the user speaking over the AI
+        if (response.serverContent && response.serverContent.interrupted) {
+          stopAiAudio();
+          hideAISpeaking();
+          return;
         }
 
-        // Handle Audio Responses
+        // 2. PROCESS AI AUDIO CHUNKS
         if (response.serverContent && response.serverContent.modelTurn) {
           const parts = response.serverContent.modelTurn.parts;
-          
           for (const part of parts) {
             if (part.inlineData && part.inlineData.mimeType.startsWith("audio/")) {
-              const base64Data = part.inlineData.data;
-              const binaryString = window.atob(base64Data);
+              const binaryString = window.atob(part.inlineData.data);
               const bytes = new Uint8Array(binaryString.length);
-              for (let i = 0; i < binaryString.length; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
+              for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
               
               audioQueue.push(bytes.buffer);
-              if (!isPlaying) {
-                playAudioFromQueue();
-              }
+              if (!isPlaying) playAudioFromQueue();
             }
           }
         }
-
-        // Handle Turn Completion
-        if (response.serverContent && response.serverContent.turnComplete) {
-          if (!isPlaying) {
-            isSpeaking = false;
-            updateMicStatus("Ready. Click to Talk.", "");
-          }
-        }
-
       } catch (e) {
-        console.error("Error parsing message:", e);
+        console.error("Error processing message:", e);
       }
     };
 
-    websocket.onclose = (event) => {
-      console.log("WebSocket Disconnected", event.code);
-      if (isRecording) stopRecording();
-      updateMicStatus("Disconnected", "error");
+    websocket.onclose = () => {
+      stopRecording();
+      updateCallStatus("Disconnected");
+      updateCallStatusInline("Disconnected");
+      hideAISpeaking();
+      hideUserSpeaking();
     };
-
-    websocket.onerror = (error) => {
-      console.error("WebSocket Error", error);
-      updateMicStatus("Error", "error");
-      stopConversation();
-    };
-
   } catch (error) {
     console.error("Connection failed:", error);
-    updateMicStatus("Connection Failed", "error");
+    updateCallStatus("Connection failed");
+    updateCallStatusInline("Connection failed");
   }
-}
-
-function stopConversation() {
-  if (isRecording) stopRecording();
-  if (websocket) {
-    websocket.close();
-    websocket = null;
-  }
-  isRecording = false;
-  isSpeaking = false;
-  isPlaying = false;
-  audioQueue = [];
 }
 
 // ===== Audio Playback Logic =====
 
 function playAudioFromQueue() {
-  if (isPlaying || audioQueue.length === 0) return;
-  
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+  if (audioQueue.length === 0) {
+    isPlaying = false;
+    hideAISpeaking();
+    return;
   }
+  
+  if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
 
   isPlaying = true;
-  updateMicStatus("AI Speaking...", "speaking");
-
-  const chunk = audioQueue.shift();
+  showAISpeaking(); // Show AI speaking animation
   
+  const chunk = audioQueue.shift();
   const int16Array = new Int16Array(chunk);
   const float32Array = new Float32Array(int16Array.length);
-  for (let i = 0; i < int16Array.length; i++) {
-    float32Array[i] = int16Array[i] / 32768; 
-  }
+  for (let i = 0; i < int16Array.length; i++) float32Array[i] = int16Array[i] / 32768; 
 
   const buffer = audioContext.createBuffer(1, float32Array.length, 24000); 
   buffer.getChannelData(0).set(float32Array);
 
   const source = audioContext.createBufferSource();
+  currentSource = source; // Store for interruption
   source.buffer = buffer;
   source.connect(audioContext.destination);
 
   source.onended = () => {
-    isPlaying = false;
+    currentSource = null;
     if (audioQueue.length > 0) {
       playAudioFromQueue();
     } else {
-      isSpeaking = false;
-      updateMicStatus("Ready. Click to Talk.", "");
+      isPlaying = false;
+      hideAISpeaking();
     }
   };
   
   source.start(0);
 }
 
-// ===== Recording Logic =====
+// ===== Recording Logic (The "Always Listening" Fix) =====
 
 async function startRecording() {
-  if (isRecording || !websocket || websocket.readyState !== WebSocket.OPEN) return;
+  if (isRecording) return;
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: {
-      channelCount: 1,
-      sampleRate: 16000 
-    }});
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     currentStream = stream;
 
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    if (!audioContext) audioContext = new AudioContext({ sampleRate: 16000 });
     const source = audioContext.createMediaStreamSource(stream);
     const processor = audioContext.createScriptProcessor(4096, 1, 1);
     
     processor.onaudioprocess = (e) => {
-      if (!isRecording) return;
-
       const inputData = e.inputBuffer.getChannelData(0);
+      
+      // Simple Client-side VAD: If user is loud, stop AI and show user speaking
+      const volume = Math.max(...inputData);
+      if (volume > 0.15) {
+        if (isPlaying) { 
+          stopAiAudio();
+          hideAISpeaking();
+        }
+        showUserSpeaking();
+      } else {
+        hideUserSpeaking();
+      }
+
       const pcm16 = floatTo16BitPCM(inputData);
       const base64Audio = arrayBufferToBase64(pcm16);
 
-      const msg = {
-        realtime_input: {
-          media_chunks: [{
-            mime_type: "audio/pcm",
-            data: base64Audio
-          }]
-        }
-      };
-      
       if (websocket && websocket.readyState === WebSocket.OPEN) {
-        websocket.send(JSON.stringify(msg));
+        websocket.send(JSON.stringify({
+          realtime_input: {
+            media_chunks: [{ mime_type: "audio/pcm", data: base64Audio }]
+          }
+        }));
       }
     };
 
     source.connect(processor);
     processor.connect(audioContext.destination);
 
-    mediaRecorder = { source, processor, stream };
     isRecording = true;
-    updateMicStatus("Listening...", "recording");
-    logMessage("User: (Listening...)", "user");
+    updateCallStatus("Listening...");
+    updateCallStatusInline("Listening...");
 
   } catch (err) {
     console.error("Mic Error:", err);
-    logMessage("Error accessing microphone.", "ai");
+    updateCallStatus("Microphone error");
+    updateCallStatusInline("Microphone error");
   }
 }
 
 function stopRecording() {
-  if (!isRecording) return;
-  
-  if (mediaRecorder) {
-    if (mediaRecorder.processor) mediaRecorder.processor.disconnect();
-    if (mediaRecorder.source) mediaRecorder.source.disconnect();
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
-    }
-  }
-  
+  if (currentStream) currentStream.getTracks().forEach(track => track.stop());
   isRecording = false;
-  updateMicStatus("Processing...", "speaking");
+  hideUserSpeaking();
 }
 
-
-// ===== DOM Initialization =====
+// ===== UI Logic =====
 
 document.addEventListener('DOMContentLoaded', () => {
-
-  const talkModal = document.getElementById('talkModal');
   const talkNowBtn = document.getElementById('talkNowBtn');
-  const closeModalBtn = document.getElementById('closeModalBtn');
-  const micToggleBtn = document.getElementById('micToggleBtn');
+  const endCallBtnInline = document.getElementById('endCallBtnInline');
+  const endCallBtn = document.getElementById('endCallBtn'); // Keep for backward compatibility
   
   if (talkNowBtn) {
     talkNowBtn.addEventListener('click', () => {
-      talkModal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-      connectToBackend();
-    });
-  }
-
-  if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', () => {
-      talkModal.classList.remove('active');
-      document.body.style.overflow = '';
-      stopConversation();
-    });
-  }
-  
-  if (micToggleBtn) {
-    micToggleBtn.addEventListener('click', () => {
-      if (isSpeaking || isPlaying) return; 
+      // Hide the Talk Now button
+      talkNowBtn.style.display = 'none';
       
-      if (isRecording) {
-        stopRecording();
-      } else {
-        if (websocket && websocket.readyState === WebSocket.OPEN) {
-          startRecording();
-        } else {
-          connectToBackend();
-        }
+      // Show the inline talk interface
+      const inlineTalkInterface = document.getElementById('inlineTalkInterface');
+      if (inlineTalkInterface) {
+        inlineTalkInterface.style.display = 'flex'; // Override inline style
+        inlineTalkInterface.classList.add('active');
+        updateCallStatusInline("Connecting...");
+        connectToBackend();
       }
     });
   }
 
-  // --- Animation & Scroll Logic (Unchanged) ---
-  const navbar = document.getElementById('navbar');
-  const navToggle = document.getElementById('navToggle');
-  const navMenu = document.getElementById('navMenu');
-  
-  window.addEventListener('scroll', () => {
-    if (window.pageYOffset > 50) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
-    }
-  });
-  
-  if (navToggle) {
-    navToggle.addEventListener('click', () => {
-      navToggle.classList.toggle('active');
-      navMenu.classList.toggle('active');
+  // Handle inline end call button
+  if (endCallBtnInline) {
+    endCallBtnInline.addEventListener('click', () => {
+      endCall();
     });
   }
-  
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-      const href = this.getAttribute('href');
-      if (href === '#' || !document.querySelector(href)) return;
-      e.preventDefault();
-      if (navToggle) navToggle.classList.remove('active');
-      if (navMenu) navMenu.classList.remove('active');
-      document.querySelector(href).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  });
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0)';
-      }
+  // Keep backward compatibility for full-screen interface
+  if (endCallBtn) {
+    endCallBtn.addEventListener('click', () => {
+      endCall();
     });
-  }, { threshold: 0.1 });
-  
-  document.querySelectorAll('.feature-card, .about-feature, .contact-item').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    observer.observe(el);
-  });
-  
-  if (typeof Tally !== 'undefined') Tally.loadEmbeds();
-
-  console.log('Voigen.ai App Initialized (Secure Mode)');
+  }
 });
+
+function updateCallStatus(status) {
+  const callStatusElement = document.getElementById('callStatus');
+  if (callStatusElement) {
+    callStatusElement.textContent = status;
+  }
+}
+
+function updateCallStatusInline(status) {
+  const callStatusInlineElement = document.getElementById('callStatusInline');
+  if (callStatusInlineElement) {
+    callStatusInlineElement.textContent = status;
+  }
+}
+
+function showAISpeaking() {
+  // Handle inline interface
+  const aiParticipantInline = document.querySelector('.participant-inline.ai-participant');
+  const aiWavesInline = document.querySelector('.participant-inline.ai-participant .sound-waves-inline');
+  
+  if (aiParticipantInline) aiParticipantInline.classList.add('speaking');
+  if (aiWavesInline) aiWavesInline.classList.add('active');
+  
+  // Keep backward compatibility for full-screen interface
+  const aiParticipant = document.querySelector('.ai-participant');
+  const aiWaves = document.querySelector('.ai-waves');
+  
+  if (aiParticipant) aiParticipant.classList.add('speaking');
+  if (aiWaves) aiWaves.classList.add('active');
+}
+
+function hideAISpeaking() {
+  // Handle inline interface
+  const aiParticipantInline = document.querySelector('.participant-inline.ai-participant');
+  const aiWavesInline = document.querySelector('.participant-inline.ai-participant .sound-waves-inline');
+  
+  if (aiParticipantInline) aiParticipantInline.classList.remove('speaking');
+  if (aiWavesInline) aiWavesInline.classList.remove('active');
+  
+  // Keep backward compatibility for full-screen interface
+  const aiParticipant = document.querySelector('.ai-participant');
+  const aiWaves = document.querySelector('.ai-waves');
+  
+  if (aiParticipant) aiParticipant.classList.remove('speaking');
+  if (aiWaves) aiWaves.classList.remove('active');
+}
+
+function showUserSpeaking() {
+  // Handle inline interface
+  const userParticipantInline = document.querySelector('.participant-inline.user-participant');
+  const userWavesInline = document.querySelector('.participant-inline.user-participant .sound-waves-inline');
+  
+  if (userParticipantInline) userParticipantInline.classList.add('speaking');
+  if (userWavesInline) userWavesInline.classList.add('active');
+  
+  // Keep backward compatibility for full-screen interface
+  const userParticipant = document.querySelector('.user-participant');
+  const userWaves = document.querySelector('.user-waves');
+  
+  if (userParticipant) userParticipant.classList.add('speaking');
+  if (userWaves) userWaves.classList.add('active');
+}
+
+function hideUserSpeaking() {
+  // Handle inline interface
+  const userParticipantInline = document.querySelector('.participant-inline.user-participant');
+  const userWavesInline = document.querySelector('.participant-inline.user-participant .sound-waves-inline');
+  
+  if (userParticipantInline) userParticipantInline.classList.remove('speaking');
+  if (userWavesInline) userWavesInline.classList.remove('active');
+  
+  // Keep backward compatibility for full-screen interface
+  const userParticipant = document.querySelector('.user-participant');
+  const userWaves = document.querySelector('.user-waves');
+  
+  if (userParticipant) userParticipant.classList.remove('speaking');
+  if (userWaves) userWaves.classList.remove('active');
+}
+
+function endCall() {
+  // Stop recording and websocket
+  stopRecording();
+  if (websocket) {
+    websocket.close();
+    websocket = null;
+  }
+  
+  // Hide inline interface and show Talk Now button again
+  const inlineTalkInterface = document.getElementById('inlineTalkInterface');
+  const talkNowBtn = document.getElementById('talkNowBtn');
+  
+  if (inlineTalkInterface) {
+    inlineTalkInterface.style.display = 'none'; // Hide with inline style
+    inlineTalkInterface.classList.remove('active');
+  }
+  
+  if (talkNowBtn) {
+    talkNowBtn.style.display = 'flex'; // Show Talk Now button again
+  }
+  
+  // Hide full-screen interface (backward compatibility)
+  const talkInterface = document.getElementById('talkInterface');
+  if (talkInterface) {
+    talkInterface.classList.remove('active');
+  }
+  
+  // Reset states
+  hideAISpeaking();
+  hideUserSpeaking();
+  updateCallStatusInline("Ready to connect...");
+  updateCallStatus("Ready to connect...");
+}

@@ -226,7 +226,7 @@ a:hover {
   align-items: center;
   position: relative;
   overflow: hidden;
-  padding-top: 8rem;
+  padding-top: 0.2rem;
 }
 
 .hero-background {
@@ -412,8 +412,184 @@ a:hover {
   box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
 }
 
-/* ===== Gemini Talk Modal Styles ===== */
-.talk-modal {
+/* ===== Fixed Inline Talk Interface Styles ===== */
+.inline-talk-interface {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between; /* Ensures status is in the middle and button at bottom */
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(30, 41, 59, 0.08) 100%);
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+  margin-top: 1rem;
+  animation: fadeInUp 0.5s ease;
+  width: 100%;
+  max-width: 500px; /* Responsive max-width */
+  min-height: 320px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+}
+
+.inline-talk-interface.active {
+  display: flex;
+}
+
+/* Horizontal layout - Fixed Alignment */
+.talk-participants-inline {
+  display: flex;
+  justify-content: space-between; /* Pushes AI to left and User to right */
+  align-items: center; /* Keeps icons perfectly level horizontally */
+  width: 100%;
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.participant-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem; /* Space between icon and text label */
+  width: 120px; /* Fixed width so labels don't shift layout */
+}
+
+/* Avatar styling */
+.avatar-icon-inline {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white; /* Thicker border for cleaner look */
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.ai-avatar {
+  background: var(--gradient-1);
+}
+
+.ai-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar {
+  background: var(--gradient-3);
+}
+
+.participant-label-inline {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 0; /* Let flex gap handle spacing */
+}
+
+/* Sound Wave Animations for Inline Interface */
+.sound-waves-inline {
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ai-waves {
+  right: -40px;
+  left: auto;
+}
+
+.sound-waves-inline.active {
+  opacity: 1;
+}
+
+.wave-inline {
+  width: 3px;
+  background: linear-gradient(to top, #667eea, #764ba2);
+  border-radius: 2px;
+  animation: wave-animation-inline 1.5s ease-in-out infinite;
+}
+
+.user-waves .wave-inline {
+  background: linear-gradient(to top, #4facfe, #00f2fe);
+}
+
+.wave-inline.wave-1 {
+  height: 15px;
+  animation-delay: 0s;
+}
+
+.wave-inline.wave-2 {
+  height: 25px;
+  animation-delay: 0.1s;
+}
+
+.wave-inline.wave-3 {
+  height: 35px;
+  animation-delay: 0.2s;
+}
+
+.wave-inline.wave-4 {
+  height: 20px;
+  animation-delay: 0.3s;
+}
+
+@keyframes wave-animation-inline {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Call status - "Connected! Start speaking..." */
+.call-status-inline {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  margin: 1.5rem 0;
+  flex-grow: 1; /* Pushes everything apart nicely */
+}
+
+/* End Call Button Styling */
+.end-call-btn-inline {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.8rem 2.5rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.end-call-btn-inline:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+/* ===== Full Screen Talk Interface Styles (Keep for backward compatibility) ===== */
+.talk-interface {
   display: none; /* Hidden by default */
   position: fixed;
   z-index: 2000; /* Above navbar */
@@ -421,135 +597,224 @@ a:hover {
   top: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
-  padding-top: 50px;
-}
-
-.talk-modal.active {
-  display: flex;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(30, 41, 59, 0.95) 100%);
+  backdrop-filter: blur(10px);
   justify-content: center;
   align-items: center;
-}
-
-.talk-modal-content {
-  background-color: var(--bg-card);
-  border-radius: var(--radius);
-  border: 1px solid var(--primary-light);
-  box-shadow: var(--shadow-lg);
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  display: flex;
   flex-direction: column;
+  gap: 3rem;
 }
 
-.talk-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+.talk-interface.active {
+  display: flex;
+}
+
+.talk-participants {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 2rem;
 }
 
-#talkStatusTitle {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--primary-light);
-}
-
-.close-btn {
-  color: var(--text-secondary);
-  font-size: 2rem;
-  font-weight: bold;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.close-btn:hover {
-  color: var(--text-primary);
-}
-
-.talk-log {
-  flex-grow: 1;
-  padding: 1.5rem;
-  overflow-y: auto;
-  line-height: 1.7;
-}
-
-.ai-message, .user-message {
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-sm);
-  margin-bottom: 1rem;
-  max-width: 85%;
-}
-
-.ai-message {
-  background-color: rgba(99, 102, 241, 0.1);
-  border-left: 3px solid var(--primary);
-  color: var(--text-secondary);
-  margin-right: auto;
-}
-
-.user-message {
-  background-color: rgba(6, 182, 212, 0.1);
-  border-right: 3px solid var(--secondary);
-  color: var(--text-primary);
-  margin-left: auto;
-  text-align: right;
-}
-
-.talk-control {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border);
+.participant {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1.5rem;
 }
 
-.mic-toggle-btn {
-  background: var(--primary);
+.ai-participant {
+  align-self: flex-start;
+  margin-top: -100px;
+}
+
+.user-participant {
+  align-self: flex-end;
+  margin-bottom: -100px;
+}
+
+.participant-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.ai-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  box-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+}
+
+.participant-label {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0.9;
+}
+
+/* Sound Wave Animations */
+.sound-waves {
+  position: absolute;
+  left: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.user-participant .sound-waves {
+  right: -60px;
+  left: auto;
+  flex-direction: row-reverse;
+}
+
+.sound-waves.active {
+  opacity: 1;
+}
+
+.wave {
+  width: 4px;
+  background: linear-gradient(to top, #667eea, #764ba2);
+  border-radius: 2px;
+  animation: wave-animation 1.5s ease-in-out infinite;
+}
+
+.user-waves .wave {
+  background: linear-gradient(to top, #4facfe, #00f2fe);
+}
+
+.wave-1 {
+  height: 20px;
+  animation-delay: 0s;
+}
+
+.wave-2 {
+  height: 35px;
+  animation-delay: 0.1s;
+}
+
+.wave-3 {
+  height: 50px;
+  animation-delay: 0.2s;
+}
+
+.wave-4 {
+  height: 30px;
+  animation-delay: 0.3s;
+}
+
+@keyframes wave-animation {
+  0%, 100% {
+    transform: scaleY(0.3);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Call Controls */
+.call-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.call-status {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  opacity: 0.9;
+  margin-bottom: 1rem;
+}
+
+.end-call-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
   border: none;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: var(--shadow-glow);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   transition: all 0.3s ease;
-  position: relative;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
 }
 
-.mic-toggle-btn:hover {
-  background: var(--primary-dark);
+.end-call-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
 }
 
-.mic-toggle-btn.recording {
-  background: #ef4444; /* Red for recording */
-  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-  animation: pulse-mic 1.5s infinite;
+.end-call-btn:active {
+  transform: translateY(0);
 }
 
-.mic-toggle-btn.speaking {
-  background: var(--secondary); /* Cyan for speaking */
-  box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7);
-  animation: pulse-mic 1.5s infinite;
+/* Active States */
+.participant.speaking .avatar-icon {
+  animation: pulse-avatar 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse-mic {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-  70% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+.participant.speaking .sound-waves {
+  opacity: 1;
 }
 
-.mic-status-text {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  font-weight: 500;
+@keyframes pulse-avatar {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(102, 126, 234, 0.8);
+  }
+}
+
+.user-participant.speaking .avatar-icon {
+  animation: pulse-avatar-user 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-avatar-user {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(79, 172, 254, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(79, 172, 254, 0.8);
+  }
 }
 
 /* ===== About Section ===== */
@@ -1236,5 +1501,51 @@ a:hover {
   
   .footer {
     padding: 2rem 1rem 1.5rem;
+  }
+  
+  /* Talk Interface Mobile Styles */
+  .talk-participants {
+    flex-direction: column;
+    gap: 4rem;
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+  
+  .ai-participant,
+  .user-participant {
+    align-self: center;
+    margin: 0;
+  }
+  
+  .avatar-icon {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .avatar-icon svg {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .sound-waves {
+    left: -50px;
+  }
+  
+  .user-participant .sound-waves {
+    right: -50px;
+    left: auto;
+  }
+  
+  .participant-label {
+    font-size: 1rem;
+  }
+  
+  .call-status {
+    font-size: 1.2rem;
+  }
+  
+  .end-call-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
   }
 }
