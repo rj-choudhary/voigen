@@ -388,6 +388,22 @@
               marginwidth="0" 
               title="Contact Us - Voigen.ai">
             </iframe>
+            <script>
+              // Initialize Tally form after the page loads
+              document.addEventListener('DOMContentLoaded', function() {
+                if (window.Tally) {
+                  window.Tally.loadEmbeds();
+                } else {
+                  // If Tally script hasn't loaded yet, wait for it
+                  const checkTally = setInterval(function() {
+                    if (window.Tally) {
+                      window.Tally.loadEmbeds();
+                      clearInterval(checkTally);
+                    }
+                  }, 100);
+                }
+              });
+            </script>
           </div>
         </div>
       </div>
