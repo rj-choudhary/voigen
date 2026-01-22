@@ -86,9 +86,7 @@ export default function TalkInterface() {
       return;
     }
     
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    }
+    if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
     isPlayingRef.current = true;
     showAISpeaking();
