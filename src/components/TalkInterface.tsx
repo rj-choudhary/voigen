@@ -13,19 +13,19 @@ declare global {
 export default function TalkInterface() {
   const [isActive, setIsActive] = useState(false);
   const [callStatus, setCallStatus] = useState("Ready to connect...");
-  const [isRecording, setIsRecording] = useState(false);
-  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-  const [audioQueue, setAudioQueue] = useState<ArrayBuffer[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentStream, setCurrentStream] = useState<MediaStream | null>(null);
-  const [currentSource, setCurrentSource] = useState<AudioBufferSourceNode | null>(null);
-  const [isAISpeaking, setIsAISpeaking] = useState(false);
-  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+
+  // Global variables to match original static version exactly
+  const isRecordingRef = useRef(false);
+  const websocketRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const isPlayingRef = useRef(false);
+  const currentStreamRef = useRef<MediaStream | null>(null);
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const BACKEND_URL = "wss://voigen-backend-1008374989342.asia-south1.run.app";
 
-  // Helper functions
+  // Helper functions - exactly as in original
   const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
     let binary = '';
     const bytes = new Uint8Array(buffer);
@@ -48,15 +48,75 @@ export default function TalkInterface() {
 
   const stopAiAudio = () => {
     console.log("!!! Interrupting AI Audio !!!");
-    setAudioQueue([]);
-    if (currentSource) {
+    audioQueueRef.current = [];
+    if (currentSourceRef.current) {
       try {
-        currentSource.stop();
+        currentSourceRef.current.stop();
       } catch (e) {}
-      setCurrentSource(null);
+      currentSourceRef.current = null;
     }
-    setIsPlaying(false);
-    setIsAISpeaking(false);
+    isPlayingRef.current = false;
+    hideAISpeaking();
+  };
+
+  const showAISpeaking = () => {
+    const aiWavesInline = document.querySelector('.ai-waves');
+    if (aiWavesInline) aiWavesInline.classList.add('active');
+  };
+
+  const hideAISpeaking = () => {
+    const aiWavesInline = document.querySelector('.ai-waves');
+    if (aiWavesInline) aiWavesInline.classList.remove('active');
+  };
+
+  const showUserSpeaking = () => {
+    const userWavesInline = document.querySelector('.user-waves');
+    if (userWavesInline) userWavesInline.classList.add('active');
+  };
+
+  const hideUserSpeaking = () => {
+    const userWavesInline = document.querySelector('.user-waves');
+    if (userWavesInline) userWavesInline.classList.remove('active');
+  };
+
+  const playAudioFromQueue = () => {
+    if (audioQueueRef.current.length === 0) {
+      isPlayingRef.current = false;
+      hideAISpeaking();
+      return;
+    }
+    
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    }
+
+    isPlayingRef.current = true;
+    showAISpeaking();
+    
+    const chunk = audioQueueRef.current.shift();
+    const int16Array = new Int16Array(chunk!);
+    const float32Array = new Float32Array(int16Array.length);
+    for (let i = 0; i < int16Array.length; i++) float32Array[i] = int16Array[i] / 32768; 
+
+    const buffer = audioContextRef.current.createBuffer(1, float32Array.length, 24000); 
+    buffer.getChannelData(0).set(float32Array);
+
+    const source = audioContextRef.current.createBufferSource();
+    currentSourceRef.current = source;
+    source.buffer = buffer;
+    source.connect(audioContextRef.current.destination);
+
+    source.onended = () => {
+      currentSourceRef.current = null;
+      if (audioQueueRef.current.length > 0) {
+        playAudioFromQueue();
+      } else {
+        isPlayingRef.current = false;
+        hideAISpeaking();
+      }
+    };
+    
+    source.start(0);
   };
 
   const connectToBackend = async () => {
@@ -64,6 +124,7 @@ export default function TalkInterface() {
 
     try {
       const ws = new WebSocket(BACKEND_URL);
+      websocketRef.current = ws;
       
       ws.onopen = () => {
         console.log("Connected to Backend");
@@ -77,6 +138,7 @@ export default function TalkInterface() {
 
           if (response.serverContent && response.serverContent.interrupted) {
             stopAiAudio();
+            hideAISpeaking();
             return;
           }
 
@@ -88,8 +150,8 @@ export default function TalkInterface() {
                 const bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
                 
-                setAudioQueue(prev => [...prev, bytes.buffer]);
-                if (!isPlaying) playAudioFromQueue();
+                audioQueueRef.current.push(bytes.buffer);
+                if (!isPlayingRef.current) playAudioFromQueue();
               }
             }
           }
@@ -101,93 +163,46 @@ export default function TalkInterface() {
       ws.onclose = () => {
         stopRecording();
         setCallStatus("Disconnected");
-        setIsAISpeaking(false);
-        setIsUserSpeaking(false);
+        hideAISpeaking();
+        hideUserSpeaking();
       };
 
-      setWebsocket(ws);
     } catch (error) {
       console.error("Connection failed:", error);
       setCallStatus("Connection failed");
     }
   };
 
-  const playAudioFromQueue = () => {
-    if (audioQueue.length === 0) {
-      setIsPlaying(false);
-      setIsAISpeaking(false);
-      return;
-    }
-    
-    if (!audioContext) {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      setAudioContext(ctx);
-    }
-
-    setIsPlaying(true);
-    setIsAISpeaking(true);
-    
-    const chunk = audioQueue[0];
-    setAudioQueue(prev => prev.slice(1));
-    
-    const int16Array = new Int16Array(chunk);
-    const float32Array = new Float32Array(int16Array.length);
-    for (let i = 0; i < int16Array.length; i++) float32Array[i] = int16Array[i] / 32768; 
-
-    if (audioContext) {
-      const buffer = audioContext.createBuffer(1, float32Array.length, 24000); 
-      buffer.getChannelData(0).set(float32Array);
-
-      const source = audioContext.createBufferSource();
-      setCurrentSource(source);
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-
-      source.onended = () => {
-        setCurrentSource(null);
-        if (audioQueue.length > 0) {
-          playAudioFromQueue();
-        } else {
-          setIsPlaying(false);
-          setIsAISpeaking(false);
-        }
-      };
-      
-      source.start(0);
-    }
-  };
-
   const startRecording = async () => {
-    if (isRecording) return;
+    if (isRecordingRef.current) return;
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setCurrentStream(stream);
+      currentStreamRef.current = stream;
 
-      const ctx = audioContext || new AudioContext({ sampleRate: 16000 });
-      if (!audioContext) setAudioContext(ctx);
-      
-      const source = ctx.createMediaStreamSource(stream);
-      const processor = ctx.createScriptProcessor(4096, 1, 1);
+      if (!audioContextRef.current) audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       
       processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
         
         const volume = Math.max(...inputData);
         if (volume > 0.15) {
-          if (isPlaying) { 
+          if (isPlayingRef.current) { 
             stopAiAudio();
+            hideAISpeaking();
           }
-          setIsUserSpeaking(true);
+          showUserSpeaking();
         } else {
-          setIsUserSpeaking(false);
+          hideUserSpeaking();
         }
 
         const pcm16 = floatTo16BitPCM(inputData);
         const base64Audio = arrayBufferToBase64(pcm16);
 
-        if (websocket && websocket.readyState === WebSocket.OPEN) {
-          websocket.send(JSON.stringify({
+        if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
+          websocketRef.current.send(JSON.stringify({
             realtime_input: {
               media_chunks: [{ mime_type: "audio/pcm", data: base64Audio }]
             }
@@ -196,9 +211,9 @@ export default function TalkInterface() {
       };
 
       source.connect(processor);
-      processor.connect(ctx.destination);
+      processor.connect(audioContextRef.current.destination);
 
-      setIsRecording(true);
+      isRecordingRef.current = true;
       setCallStatus("Listening...");
 
     } catch (err) {
@@ -208,11 +223,11 @@ export default function TalkInterface() {
   };
 
   const stopRecording = () => {
-    if (currentStream) {
-      currentStream.getTracks().forEach(track => track.stop());
+    if (currentStreamRef.current) {
+      currentStreamRef.current.getTracks().forEach(track => track.stop());
     }
-    setIsRecording(false);
-    setIsUserSpeaking(false);
+    isRecordingRef.current = false;
+    hideUserSpeaking();
   };
 
   const handleTalkNow = () => {
@@ -231,14 +246,14 @@ export default function TalkInterface() {
 
   const handleEndCall = () => {
     stopRecording();
-    if (websocket) {
-      websocket.close();
-      setWebsocket(null);
+    if (websocketRef.current) {
+      websocketRef.current.close();
+      websocketRef.current = null;
     }
     
     setIsActive(false);
-    setIsAISpeaking(false);
-    setIsUserSpeaking(false);
+    hideAISpeaking();
+    hideUserSpeaking();
     setCallStatus("Ready to connect...");
   };
 
@@ -265,7 +280,7 @@ export default function TalkInterface() {
                     className="ai-avatar-img"
                   />
                 </div>
-                <div className={`sound-waves-inline ai-waves ${isAISpeaking ? 'active' : ''}`}>
+                <div className="sound-waves-inline ai-waves">
                   <div className="wave-inline wave-1"></div>
                   <div className="wave-inline wave-2"></div>
                   <div className="wave-inline wave-3"></div>
@@ -282,7 +297,7 @@ export default function TalkInterface() {
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                   </svg>
                 </div>
-                <div className={`sound-waves-inline user-waves ${isUserSpeaking ? 'active' : ''}`}>
+                <div className="sound-waves-inline user-waves">
                   <div className="wave-inline wave-1"></div>
                   <div className="wave-inline wave-2"></div>
                   <div className="wave-inline wave-3"></div>
