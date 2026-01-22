@@ -296,26 +296,45 @@ class WaveAnimation {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Small delay to ensure everything is loaded
-    setTimeout(() => {
+// Initialize wave animation
+function initWaveAnimation() {
+    if (typeof window !== 'undefined' && !window.waveAnimation) {
         window.waveAnimation = new WaveAnimation();
-    }, 100);
-});
+        console.log('Wave animation initialized');
+    }
+}
+
+// Initialize when DOM is loaded
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initWaveAnimation, 100);
+        });
+    } else {
+        // DOM is already loaded
+        setTimeout(initWaveAnimation, 100);
+    }
+}
 
 // Handle page visibility changes for performance
-document.addEventListener('visibilitychange', () => {
-    if (window.waveAnimation) {
-        if (document.hidden) {
-            if (window.waveAnimation.animationId) {
-                cancelAnimationFrame(window.waveAnimation.animationId);
-                window.waveAnimation.animationId = null;
-            }
-        } else {
-            if (!window.waveAnimation.animationId) {
-                window.waveAnimation.animate();
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+        if (window.waveAnimation) {
+            if (document.hidden) {
+                if (window.waveAnimation.animationId) {
+                    cancelAnimationFrame(window.waveAnimation.animationId);
+                    window.waveAnimation.animationId = null;
+                }
+            } else {
+                if (!window.waveAnimation.animationId) {
+                    window.waveAnimation.animate();
+                }
             }
         }
-    }
-});
+    });
+}
+
+// Also try to initialize immediately if script loads after DOM
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    setTimeout(initWaveAnimation, 500);
+}
