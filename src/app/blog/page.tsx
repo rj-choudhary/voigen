@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function BlogPage() {
+function BlogContent() {
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<any[]>([]);
   const [selectedTag, setSelectedTag] = useState<string>('All Articles');
@@ -268,5 +268,33 @@ export default function BlogPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Wrap with Suspense boundary
+export default function BlogPage() {
+  return (
+    <Suspense fallback={
+      <main className="blog-page">
+        <div className="blog-container">
+          <div className="skeleton-pulse skeleton-title" />
+          <div className="skeleton-featured">
+            <div className="skeleton-pulse skeleton-featured-image" />
+            <div className="skeleton-featured-content">
+              <div>
+                <div className="skeleton-tags">
+                  <div className="skeleton-pulse skeleton-tag skeleton-tag-1" />
+                  <div className="skeleton-pulse skeleton-tag skeleton-tag-2" />
+                </div>
+                <div className="skeleton-pulse skeleton-line-title skeleton-line-title-90" />
+                <div className="skeleton-pulse skeleton-line-title skeleton-line-title-70" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    }>
+      <BlogContent />
+    </Suspense>
   );
 }
