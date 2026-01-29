@@ -2941,36 +2941,99 @@ a:hover {
   }
   
   .hero-section {
-    padding-top: 5rem;
+    padding-top: 9rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
   
   .hero-content {
-    padding-top: 1rem;
+    padding-top: 3rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
   }
   
   .hero-badge {
-    font-size: 0.75rem;
-    padding: 0.35rem 1rem;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.85rem;
     margin-bottom: 1.5rem;
   }
   
   .hero-title {
-    font-size: 1.75rem;
-    margin-bottom: 1rem;
+    font-size: 1.65rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.15;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Fix for rotating text on mobile */
+  .hero-rotating-text {
+    font-size: 1.5rem;
+    min-height: 2.5rem;
+    margin-bottom: 1.5rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   .hero-subtitle {
-    font-size: 1rem;
-    margin-bottom: 2rem;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
   }
   
   .hero-cta {
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
+    width: 100%;
+  }
+  
+  /* Fix Talk Now Button for Mobile */
+  .talk-now-btn {
+    width: 100%;
+    max-width: 100%;
+    padding: 0.65rem 1.25rem 0.65rem 0.65rem;
+    gap: 0.75rem;
+  }
+  
+  .talk-now-btn .mic-orb {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .talk-now-btn .mic-orb svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .talk-now-btn .btn-text {
+    font-size: 1.1rem;
+  }
+  
+  .talk-now-btn .btn-subtext {
+    font-size: 0.55rem;
   }
   
   .btn {
     padding: 0.875rem 1.5rem;
     font-size: 0.95rem;
+  }
+  
+  /* Fix hero description */
+  .hero-description {
+    font-size: 0.9rem;
+    margin-top: 4rem;
+    padding: 0 0.5rem;
+  }
+  
+  /* Fix trust indicators for mobile */
+  .hero-trust-indicators {
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 3rem;
+    padding: 0 0.5rem;
+  }
+  
+  .trust-item {
+    font-size: 0.8rem;
+    justify-content: flex-start;
   }
   
   .stat-number {
