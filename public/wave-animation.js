@@ -51,7 +51,7 @@ class WaveAnimation {
                 frequency: 0.008,
                 speed: 0.014,
                 offset: 0,
-                color: 'rgba(99, 102, 241, 0.15)',
+                color: 'rgba(99, 102, 241, 0.17)',
                 y: 0.3
             },
             {
@@ -59,7 +59,7 @@ class WaveAnimation {
                 frequency: 0.012,
                 speed: -0.0105,
                 offset: Math.PI / 3,
-                color: 'rgba(6, 182, 212, 0.12)',
+                color: 'rgba(6, 182, 212, 0.10)',
                 y: 0.5
             },
             {
@@ -67,7 +67,7 @@ class WaveAnimation {
                 frequency: 0.015,
                 speed: 0.0175,
                 offset: Math.PI / 2,
-                color: 'rgba(245, 158, 11, 0.1)',
+                color: 'rgba(99, 102, 241, 0.10)',
                 y: 0.7
             },
             {
@@ -75,7 +75,7 @@ class WaveAnimation {
                 frequency: 0.006,
                 speed: -0.007,
                 offset: Math.PI,
-                color: 'rgba(139, 92, 246, 0.08)',
+                color: 'rgba(6, 182, 212, 0.07)',
                 y: 0.2
             }
         ];

@@ -1,9 +1,70 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import TalkInterface from '@/components/TalkInterface';
+import ContactForm from '@/components/ContactForm';
 
 export default function Home() {
+  const [displayText, setDisplayText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  
+  // ROI Calculator State
+  const [missedCalls, setMissedCalls] = useState(15);
+  const [ticketValue, setTicketValue] = useState(250);
+  
+  // Calculations (matching sample code logic)
+  const bounceRate = 0.85;
+  const weeksPerMonth = 4.3;
+  const avgCallDuration = 4; // minutes per call
+  const monthlyMissedCalls = missedCalls * weeksPerMonth;
+  const lostRevenue = Math.round(monthlyMissedCalls * ticketValue * bounceRate);
+  const totalMinutes = monthlyMissedCalls * avgCallDuration;
+  const humanHourlyRate = 22; // USD per hour
+  const humanMonthlyCost = Math.round(20 * weeksPerMonth * humanHourlyRate);
+  const voigenCost = Math.round(totalMinutes * 0.05); // $0.05 per minute
+  const savings = humanMonthlyCost - voigenCost;
+  const savingsPercent = humanMonthlyCost > 0 ? Math.round((savings / humanMonthlyCost) * 100) : 0;
+  
+  const phrases = [
+    'never misses a call',
+    'captures every lead',
+    'books your appointments',
+    'answers customer FAQs'
+  ];
+
+  useEffect(() => {
+    const currentPhrase = phrases[phraseIndex];
+    let timeout: NodeJS.Timeout;
+
+    if (!isDeleting) {
+      // Typing
+      if (displayText.length < currentPhrase.length) {
+        timeout = setTimeout(() => {
+          setDisplayText(currentPhrase.substring(0, displayText.length + 1));
+        }, 100);
+      } else {
+        // Pause at end before deleting
+        timeout = setTimeout(() => {
+          setIsDeleting(true);
+        }, 2000);
+      }
+    } else {
+      // Deleting
+      if (displayText.length > 0) {
+        timeout = setTimeout(() => {
+          setDisplayText(displayText.substring(0, displayText.length - 1));
+        }, 50);
+      } else {
+        // Move to next phrase
+        setIsDeleting(false);
+        setPhraseIndex((prev) => (prev + 1) % phrases.length);
+      }
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, phraseIndex, phrases]);
+
   useEffect(() => {
     // Google Analytics - Talk Now Button Tracking
     const handleTalkNowClick = () => {
@@ -43,178 +104,526 @@ export default function Home() {
         </div>
         <div className="container">
           <div className="hero-content">
-            <div className="hero-badge">🚀 AI-Powered Automation</div>
             <h1 className="hero-title">
-              Automate Your Business
-              <span className="gradient-text"> Conversations</span>
+              Your 24/7 <span className="ai-gradient">AI Voice Agent</span> that
             </h1>
+            <div className="hero-rotating-text">
+              <span className="rotating-text gradient-text">{displayText}</span>
+              <span className="typing-cursor">|</span>
+            </div>
             <p className="hero-subtitle">
-              Talk to our AI receptionist - Experience our demo
+              Try it live — speak now
             </p>
             <div className="hero-cta">
               <TalkInterface />
             </div>
-            <div className="hero-stats">
-              <div className="stat">
-                <div className="stat-number">10x</div>
-                <div className="stat-label">Faster Response</div>
+            <p className="hero-description">
+              Stop losing customers to voicemail. Voigen answers your business calls, understands caller needs, and captures leads or books appointments directly into your tools.
+            </p>
+            
+            {/* Trust Indicators */}
+            <div className="hero-trust-indicators">
+              <div className="trust-item">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <span>No credit card required</span>
               </div>
-              <div className="stat">
-                <div className="stat-number">24/7</div>
-                <div className="stat-label">Availability</div>
+              <div className="trust-item">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                  <rect x="2" y="7" width="20" height="5"></rect>
+                  <line x1="12" y1="22" x2="12" y2="7"></line>
+                  <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                  <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                </svg>
+                <span>7-Day Free Trial</span>
               </div>
-              <div className="stat">
-                <div className="stat-number">80%</div>
-                <div className="stat-label">Cost Reduction</div>
+              <div className="trust-item">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>We handle the setup</span>
+              </div>
+              <div className="trust-item">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                  <polyline points="2 12 12 17 22 12"></polyline>
+                </svg>
+                <span>Works with your tools</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="section features-section">
+      {/* Pain Point Section */}
+      <section className="section pain-point-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Powerful <span className="gradient-text">Features</span></h2>
-            <p className="section-subtitle">Everything you need to automate customer conversations</p>
+            <h2 className="section-title">Why small businesses are switching to <span className="gradient-text">AI voice</span></h2>
+            <p className="section-subtitle">A missed call isn't just a notification—it's lost revenue.</p>
           </div>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon-wrapper">
-                <span className="feature-icon-large">📞</span>
+          
+          <div className="pain-point-grid">
+            <div className="pain-point-card">
+              <span className="pain-point-tag red-tag">Pain</span>
+              <div className="pain-point-icon red">
+                <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  <path d="M15 9l-6 6"></path>
+                </svg>
               </div>
-              <h3>AI Phone Automation</h3>
-              <p>Handle inbound calls with natural-sounding AI voices. Intelligent routing, IVR flows, and seamless handoff to human agents when needed.</p>
-              <ul className="feature-list">
-                <li>Natural voice conversations</li>
-                <li>Intent detection & routing</li>
-                <li>Smart call forwarding</li>
-                <li>Call recording & analytics</li>
-              </ul>
+              <h3>Missed Calls = Lost Cash</h3>
+              <p>Studies show 85% of people won't call back if you don't answer the first time.</p>
             </div>
-
-            <div className="feature-card featured">
-              <div className="featured-badge">Most Popular</div>
-              <div className="feature-icon-wrapper">
-                <span className="feature-icon-large">💬</span>
+            
+            <div className="pain-point-card">
+              <span className="pain-point-tag indigo-tag">Relief</span>
+              <div className="pain-point-icon indigo">
+                <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
               </div>
-              <h3>WhatsApp Automation</h3>
-              <p>Automate WhatsApp conversations with intelligent chatbots. Send notifications, handle FAQs, and qualify leads automatically.</p>
-              <ul className="feature-list">
-                <li>Auto-replies & templates</li>
-                <li>Interactive buttons & media</li>
-                <li>Broadcast messages</li>
-                <li>CRM integration</li>
-              </ul>
+              <h3>24/7 Availability</h3>
+              <p>Your business stays open while you sleep, travel, or focus on current clients.</p>
             </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrapper">
-                <span className="feature-icon-large">📅</span>
+            
+            <div className="pain-point-card">
+              <span className="pain-point-tag amber-tag">Efficiency</span>
+              <div className="pain-point-icon amber">
+                <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
               </div>
-              <h3>Appointment Booking</h3>
-              <p>Let customers book appointments directly through calls or WhatsApp. Automatic calendar sync and reminder notifications.</p>
-              <ul className="feature-list">
-                <li>Calendar integration</li>
-                <li>Automated reminders</li>
-                <li>Rescheduling support</li>
-                <li>Multi-timezone handling</li>
-              </ul>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrapper">
-                <span className="feature-icon-large">🎯</span>
-              </div>
-              <h3>Lead Qualification</h3>
-              <p>Automatically qualify and score leads based on conversations. Capture contact details and route hot leads to your sales team.</p>
-              <ul className="feature-list">
-                <li>Smart lead scoring</li>
-                <li>Data capture & storage</li>
-                <li>Priority routing</li>
-                <li>Follow-up automation</li>
-              </ul>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrapper">
-                <span className="feature-icon-large">🔗</span>
-              </div>
-              <h3>Easy Integrations</h3>
-              <p>Connect with your existing tools seamlessly. Webhooks, APIs, and native integrations with popular CRMs and business tools.</p>
-              <ul className="feature-list">
-                <li>Webhook support</li>
-                <li>CRM integrations</li>
-                <li>Custom API access</li>
-                <li>Zapier compatibility</li>
-              </ul>
-            </div>
-
-            <div className="feature-card">
-              <div className="feature-icon-wrapper">
-                <span className="feature-icon-large">📊</span>
-              </div>
-              <h3>Analytics & Insights</h3>
-              <p>Track performance with detailed analytics. Monitor conversation quality, response times, and customer satisfaction metrics.</p>
-              <ul className="feature-list">
-                <li>Real-time dashboards</li>
-                <li>Conversation analytics</li>
-                <li>Performance metrics</li>
-                <li>Custom reports</li>
-              </ul>
+              <h3>Only serious calls reach you</h3>
+              <p>Our AI Voice agent understands why people are calling, filters spam, and passes you qualified leads only.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section id="about" className="section about-section">
+      {/* How It Works Section */}
+      <section className="section how-it-works-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">About <span className="gradient-text">Voigen.ai</span></h2>
-            <p className="section-subtitle">Empowering small businesses with intelligent automation</p>
+            <p className="how-it-works-badge">How It Works</p>
+            <h2 className="section-title how-it-works-title">A fully managed setup by our team</h2>
+            <p className="section-subtitle how-it-works-subtitle">No technical skills required. We handle everything.</p>
           </div>
-          <div className="about-content">
-            <div className="about-text">
-              <h3>Who We Are</h3>
-              <p>
-                Voigen.ai is a cutting-edge AI automation platform designed specifically for small business owners 
-                who want to streamline their customer communications without breaking the bank.
-              </p>
-              <p>
-                We understand the challenges of managing customer calls and WhatsApp messages while running a business. 
-                That&apos;s why we&apos;ve built an intelligent system that handles conversations naturally, books appointments, 
-                answers FAQs, and qualifies leads—all automatically.
-              </p>
-              <h3>Our Mission</h3>
-              <p>
-                To democratize AI-powered customer service automation, making enterprise-level technology accessible 
-                and affordable for small businesses worldwide.
-              </p>
-              <div className="about-features">
-                <div className="about-feature">
-                  <span className="feature-icon">🎯</span>
-                  <div>
-                    <h4>Purpose-Built</h4>
-                    <p>Designed specifically for small business needs</p>
+          
+          <div className="how-it-works-grid">
+            <div className="how-it-works-card">
+              <div className="step-number">1</div>
+              <div className="step-icon">
+                <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="8.5" cy="7" r="4"></circle>
+                  <line x1="20" y1="8" x2="20" y2="14"></line>
+                  <line x1="23" y1="11" x2="17" y2="11"></line>
+                </svg>
+              </div>
+              <h3>Sign up free</h3>
+              <p>Create your account in 2 minutes. No credit card required to start.</p>
+            </div>
+            
+            <div className="step-connector">
+              <svg width="40" height="24" viewBox="0 0 40 24" fill="none">
+                <path d="M0 12H36M36 12L28 4M36 12L28 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            
+            <div className="how-it-works-card">
+              <div className="step-number">2</div>
+              <div className="step-icon">
+                <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path>
+                </svg>
+              </div>
+              <h3>We set it up for you</h3>
+              <p>Book a free call. Our team configures your AI employees for your workflow.</p>
+            </div>
+            
+            <div className="step-connector">
+              <svg width="40" height="24" viewBox="0 0 40 24" fill="none">
+                <path d="M0 12H36M36 12L28 4M36 12L28 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            
+            <div className="how-it-works-card">
+              <div className="step-number">3</div>
+              <div className="step-icon">
+                <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <h3>They work 24/7</h3>
+              <p>Your AI employees start working immediately. Track progress in your dashboard.</p>
+            </div>
+          </div>
+          
+          <div className="how-it-works-cta">
+            <a href="/auth/signup" className="btn btn-light">
+              <span className="btn-main-text">Start Free Trial</span>
+              <span className="btn-sub-text">No CC required</span>
+            </a>
+            <button
+              className="btn btn-outline btn-on-dark"
+              data-cal-namespace="democall"
+              data-cal-link="voigen-mvcmgc/democall"
+              data-cal-config='{"layout":"month_view"}'
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              Book a Demo
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Calculator Section - New Design */}
+      <section className="roi-section-new">
+        <div className="roi-container-new">
+          <div className="roi-header-new">
+            <h2 className="roi-title-new">The Reality of Missed Calls</h2>
+            <p className="roi-subtitle-new">Compare your current leaks with the cost of a solution.</p>
+          </div>
+
+          <div className="roi-card-new">
+            <div className="roi-grid-new">
+              {/* Left Column: Inputs & Loss (Dark) */}
+              <div className="roi-left-column">
+                <div className="roi-left-content">
+                  <div className="roi-section-title">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="roi-icon-red">
+                      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                      <polyline points="17 18 23 18 23 12"></polyline>
+                    </svg>
+                    <span>Calculate Loss</span>
+                  </div>
+                  
+                  <div className="roi-sliders">
+                    {/* Weekly Missed Calls */}
+                    <div className="roi-slider-item">
+                      <div className="roi-slider-row">
+                        <label className="roi-slider-label">Weekly Missed Calls</label>
+                        <span className="roi-slider-value-new">{missedCalls} calls</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="1" 
+                        max="100" 
+                        value={missedCalls}
+                        onChange={(e) => setMissedCalls(parseInt(e.target.value))}
+                        className="roi-range-input"
+                      />
+                    </div>
+                    
+                    {/* Avg Project Value */}
+                    <div className="roi-slider-item">
+                      <div className="roi-slider-row">
+                        <label className="roi-slider-label">Avg. Project Value</label>
+                        <span className="roi-slider-value-new">${ticketValue}</span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="50" 
+                        max="5000" 
+                        step="50"
+                        value={ticketValue}
+                        onChange={(e) => setTicketValue(parseInt(e.target.value))}
+                        className="roi-range-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Revenue Leak Display */}
+                  <div className="roi-leak-section">
+                    <p className="roi-leak-label">Estimated Monthly Revenue Leak</p>
+                    <div className="roi-leak-amount">
+                      <span className="roi-leak-number">${lostRevenue.toLocaleString()}</span>
+                      <span className="roi-leak-period">/mo</span>
+                    </div>
+                    <p className="roi-leak-note">*Calculated on an 85% bounce rate: callers hire your competitor if you don&apos;t answer.</p>
                   </div>
                 </div>
-                <div className="about-feature">
-                  <span className="feature-icon">⚡</span>
-                  <div>
-                    <h4>Easy Setup</h4>
-                    <p>Get started in minutes, no technical expertise required</p>
+                
+                {/* Decorative glow */}
+                <div className="roi-glow"></div>
+              </div>
+
+              {/* Right Column: Cost Comparison (Light) */}
+              <div className="roi-right-column">
+                <div className="roi-section-title-light">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="roi-icon-indigo">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                  <span>The Math is Simple</span>
+                </div>
+
+                <div className="roi-cards-grid">
+                  {/* Human Card */}
+                  <div className="roi-human-card-new">
+                    <div className="roi-card-icon-wrapper human-icon">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                    </div>
+                    <h4 className="roi-card-title">Human Receptionist</h4>
+                    <p className="roi-card-desc">Based on $22/hr (salary + overhead) for 20hr/week coverage.</p>
+                    <div className="roi-card-cost-section">
+                      <span className="roi-card-cost-label">Monthly Cost</span>
+                      <span className="roi-card-cost-value">${humanMonthlyCost.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* AI Card */}
+                  <div className="roi-ai-card-new">
+                    <div className="roi-ai-bg-icon">
+                      <svg width="80" height="80" fill="none" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                      </svg>
+                    </div>
+                    <div className="roi-card-icon-wrapper ai-icon">
+                      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                        <circle cx="12" cy="5" r="2"></circle>
+                        <path d="M12 7v4"></path>
+                        <line x1="8" y1="16" x2="8" y2="16"></line>
+                        <line x1="16" y1="16" x2="16" y2="16"></line>
+                      </svg>
+                    </div>
+                    <h4 className="roi-card-title-white">Voigen AI (Voice Agent)</h4>
+                    <p className="roi-card-desc-light">Pay only for active minutes. Calculated at just $0.05/minute.</p>
+                    <div className="roi-card-cost-section-ai">
+                      <div className="roi-card-cost-left">
+                        <span className="roi-card-cost-label-light">Monthly Cost</span>
+                        <span className="roi-card-cost-value-white">${voigenCost.toLocaleString()}</span>
+                      </div>
+                      <div className="roi-cheaper-badge">95% Cheaper</div>
+                    </div>
                   </div>
                 </div>
-                <div className="about-feature">
-                  <span className="feature-icon">💰</span>
-                  <div>
-                    <h4>Affordable</h4>
-                    <p>Enterprise features at small business prices</p>
+
+                {/* Bottom CTA */}
+                <div className="roi-bottom-cta">
+                  <div className="roi-cta-text">
+                    <p className="roi-cta-title">Ready to plug the leak?</p>
+                    <p className="roi-cta-savings">Save <span className="roi-cta-amount">${savings.toLocaleString()}</span> every month compared to staff.</p>
                   </div>
+                  <a href="/auth/signup" className="roi-cta-btn">Switch to AI Now</a>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Powerhouse Features Section */}
+      <section id="features" className="powerhouse-section">
+        <div className="powerhouse-container">
+          {/* Header */}
+          <div className="powerhouse-header">
+            <div className="powerhouse-badge">
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M12 3l1.912 5.813a2 2 0 001.272 1.272L21 12l-5.813 1.912a2 2 0 00-1.272 1.272L12 21l-1.912-5.813a2 2 0 00-1.272-1.272L3 12l5.813-1.912a2 2 0 001.272-1.272L12 3z"></path>
+              </svg>
+              Core Capabilities
+            </div>
+            <h2 className="powerhouse-title">The Voigen <span className="powerhouse-highlight">Powerhouse</span></h2>
+            <p className="powerhouse-subtitle">Everything you need to automate your front desk with precision and personality.</p>
+          </div>
+
+          {/* Features Grid */}
+          <div className="powerhouse-grid">
+            {/* Feature 1: Human Voice Agents */}
+            <div className="powerhouse-card">
+              <div className="powerhouse-card-header">
+                <div className="powerhouse-icon indigo">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                </div>
+                <h3>Human-Like Voice Agents</h3>
+              </div>
+              <p className="powerhouse-card-desc">Neural engines that engage customers with natural pacing and professional warmth to build instant trust.</p>
+              <div className="powerhouse-tags">
+                <span className="powerhouse-tag">Emotional Intelligence</span>
+                <span className="powerhouse-tag">HD Audio</span>
+              </div>
+              <div className="powerhouse-arrow">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            {/* Feature 2: Interrupt-Friendly */}
+            <div className="powerhouse-card">
+              <div className="powerhouse-card-header">
+                <div className="powerhouse-icon amber">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    <line x1="9" y1="10" x2="15" y2="10"></line>
+                  </svg>
+                </div>
+                <h3>Interrupt-Friendly</h3>
+              </div>
+              <p className="powerhouse-card-desc">Eva handles mid-sentence interruptions naturally, adapting her flow just like a real person would.</p>
+              <div className="powerhouse-tags">
+                <span className="powerhouse-tag">Active Listening</span>
+                <span className="powerhouse-tag">Adaptive</span>
+              </div>
+              <div className="powerhouse-arrow">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            {/* Feature 3: Appointment Booking */}
+            <div className="powerhouse-card">
+              <div className="powerhouse-card-header">
+                <div className="powerhouse-icon green">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                    <path d="M9 16l2 2 4-4"></path>
+                  </svg>
+                </div>
+                <h3>Appointment Booking</h3>
+              </div>
+              <p className="powerhouse-card-desc">Eva checks your availability and books meetings directly into your calendar in real-time.</p>
+              <div className="powerhouse-tags">
+                <span className="powerhouse-tag">Syncs with Google</span>
+                <span className="powerhouse-tag">Auto-Reminders</span>
+              </div>
+              <div className="powerhouse-arrow">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            {/* Feature 4: Multilingual Support */}
+            <div className="powerhouse-card">
+              <div className="powerhouse-card-header">
+                <div className="powerhouse-icon blue">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+                <h3>Multilingual Support</h3>
+              </div>
+              <p className="powerhouse-card-desc">Understand regional accents and speak 20+ languages natively to serve a global customer base.</p>
+              <div className="powerhouse-tags">
+                <span className="powerhouse-tag">20+ Languages</span>
+                <span className="powerhouse-tag">Accent Aware</span>
+              </div>
+              <div className="powerhouse-arrow">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            {/* Feature 5: Lead Qualification */}
+            <div className="powerhouse-card">
+              <div className="powerhouse-card-header">
+                <div className="powerhouse-icon purple">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                    <polyline points="17 11 19 13 23 9"></polyline>
+                  </svg>
+                </div>
+                <h3>Lead Qualification</h3>
+              </div>
+              <p className="powerhouse-card-desc">Automatically score leads based on intent and route high-value opportunities to your sales team.</p>
+              <div className="powerhouse-tags">
+                <span className="powerhouse-tag">Data Capture</span>
+                <span className="powerhouse-tag">Lead Scoring</span>
+              </div>
+              <div className="powerhouse-arrow">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            {/* Feature 6: Deep Integrations */}
+            <div className="powerhouse-card">
+              <div className="powerhouse-card-header">
+                <div className="powerhouse-icon rose">
+                  <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                </div>
+                <h3>Deep Integrations</h3>
+              </div>
+              <p className="powerhouse-card-desc">Push call data and transcripts into your CRM or business tools via Webhooks or native APIs.</p>
+              <div className="powerhouse-tags">
+                <span className="powerhouse-tag">Zapier Ready</span>
+                <span className="powerhouse-tag">Custom APIs</span>
+              </div>
+              <div className="powerhouse-arrow">
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="powerhouse-cta">
+            <div className="powerhouse-cta-glow"></div>
+            <div className="powerhouse-cta-content">
+              <h3>Ready to switch to AI?</h3>
+              <p>Capture every lead and book every meeting starting today.</p>
+            </div>
+            <div className="powerhouse-cta-buttons">
+              <a href="/auth/signup" className="btn btn-primary">
+                Get Started
+                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+              </a>
+              <button 
+                className="btn btn-outline btn-on-dark"
+                data-cal-namespace="democall"
+                data-cal-link="voigen-mvcmgc/democall"
+                data-cal-config='{"layout":"month_view"}'
+              >
+                Live Demo
+              </button>
             </div>
           </div>
         </div>
@@ -268,50 +677,10 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="social-links">
-                <h4>Follow Us</h4>
-                <div className="social-icons">
-                  <a href="https://www.linkedin.com/company/voigen" target="_blank" className="social-icon" aria-label="LinkedIn" title="LinkedIn">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
-                    </svg>
-                  </a>
-                  <a href="https://twitter.com/voigenai" target="_blank" className="social-icon" aria-label="Twitter" title="Twitter/X">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path>
-                    </svg>
-                  </a>
-                  <a href="https://www.instagram.com/voigenai" target="_blank" className="social-icon" aria-label="Instagram" title="Instagram">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path>
-                    </svg>
-                  </a>
-                  <a href="https://www.facebook.com/voigenai" target="_blank" className="social-icon" aria-label="Facebook" title="Facebook">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-                    </svg>
-                  </a>
-                </div>
-              </div>
             </div>
 
             <div className="contact-form-wrapper">
-              <div className="tally-form-container">
-                <h3>Request a Demo</h3>
-                <p className="form-subtitle">Let us show you how Voigen.ai can transform your business</p>
-                
-                {/* Tally Embedded Form */}
-                <iframe 
-                  data-tally-src="https://tally.so/embed/J91vGz?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1" 
-                  loading="lazy" 
-                  width="100%" 
-                  height="600" 
-                  frameBorder="0" 
-                  marginHeight={0}
-                  marginWidth={0}
-                  title="Contact Us - Voigen.ai">
-                </iframe>
-              </div>
+              <ContactForm />
             </div>
           </div>
         </div>
