@@ -40,6 +40,31 @@ export default function AboutUsPage() {
               To democratize AI-powered customer service automation, making enterprise-level technology accessible 
               and affordable for small businesses worldwide.
             </p>
+            
+            <h3>About Stackbyte Labs Private Limited</h3>
+            <p>
+              Voigen.ai is a product developed and operated by Stackbyte Labs Private Limited, an India-based 
+              technology company focused on building AI-powered automation solutions for modern businesses.
+            </p>
+            <p>
+              Stackbyte Labs Private Limited works on developing intelligent software platforms that help businesses 
+              improve operational efficiency through artificial intelligence, automation, and digital transformation tools.
+            </p>
+            <p>
+              Voigen.ai is one of the flagship products of Stackbyte Labs, designed to help small and medium businesses 
+              automate customer communication through AI voice agents and WhatsApp automation. The platform enables 
+              businesses to handle customer calls, answer queries, book appointments, and qualify leads automatically 
+              using conversational AI.
+            </p>
+            <p>
+              Stackbyte Labs Private Limited is committed to building scalable and practical AI solutions that make 
+              advanced technology accessible to businesses of all sizes.
+            </p>
+            <p>
+              For official communication and verification, Voigen.ai operates under the parent company Stackbyte Labs 
+              Private Limited.
+            </p>
+            
             <div className="about-features">
               <div className="about-feature">
                 <span className="feature-icon">🎯</span>
